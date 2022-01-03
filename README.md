@@ -58,7 +58,7 @@ Your compiler must support the following operators:
 -   `%` modulus (aka remainder)
 -   `sqrt` square root
 
-(You only need to support integers; we don't need to worry about floating point numbers.)
+(You only need to support integers; don't worry about floating point numbers.)
 
 ### Registers
 
@@ -92,9 +92,9 @@ The output of this program will be
 
 ## Compilation to CIL
 
-[CIL (formerly MSIL)](https://en.wikipedia.org/wiki/Common_Intermediate_Language) is the pseudo-assembly language of .NET. You can easily see what CIL is generated for a C# program at [sharplab.io](https://sharplab.io).
+[CIL (formerly MSIL)](https://en.wikipedia.org/wiki/Common_Intermediate_Language) is the pseudo-assembly language of .NET. It is a stack-based language that natively supports OO.
 
-One way to solve this assignment is to think about what the program would look like if you wrote it in C#. `3 4 + sx rx rx *` might look like this:
+Without studying CIL a *lot*, it's hard to make sense of what's going on.  One way to see how it works is to think about what your program would look like if you wrote it in C#. `3 4 + sx rx rx *` might look like this:
 
 ```csharp
 using System;
@@ -125,9 +125,9 @@ static class Program
 
 This is simple enough--use a `Stack<int>` to be the calculation stack and a `Dictionary<char,int>` to store the registers.
 
-(If you paste that code into [sharplab.io](https://sharplab.io) to see the CIL, **do not be intimidated by the output!** Most of the output is "boilerplate".)
+If you paste that code into [sharplab.io](https://sharplab.io), you will see what the CIL would look like.  **Do not be intimidated by the output!**  Most of the output is "boilerplate".
 
-Here is what the equivalent CIL would be, with comments to explain what's going on:
+Here is what the equivalent CIL would be (slightly simplified from what sharplab.io shows), with comments to explain what's going on:
 
 ```
 // Preamble
@@ -161,7 +161,7 @@ Here is what the equivalent CIL would be, with comments to explain what's going 
     ldc.i4.4
     callvirt instance void class [System.Collections]System.Collections.Generic.Stack`1<int32>::Push(!0)
 
-    // Pop two values on the stack, execute a add operation, and push the result
+    // Pop two values off the stack, execute a add operation, and push the result
     ldloc.0
     ldloc.0
     callvirt instance !0 class [System.Collections]System.Collections.Generic.Stack`1<int32>::Pop()
@@ -191,7 +191,7 @@ Here is what the equivalent CIL would be, with comments to explain what's going 
     callvirt instance !1 class [System.Private.CoreLib]System.Collections.Generic.Dictionary`2<char, int32>::get_Item(!0)
     callvirt instance void class [System.Collections]System.Collections.Generic.Stack`1<int32>::Push(!0)
 
-    // Pop two values on the stack, execute a mul operation, and push the result
+    // Pop two values off the stack, execute a mul operation, and push the result
     ldloc.0
     ldloc.0
     callvirt instance !0 class [System.Collections]System.Collections.Generic.Stack`1<int32>::Pop()
@@ -220,6 +220,7 @@ While this may look very complicated, you should notice some repetitive code blo
 1. Open the cloned directory in vscode.
 1. When vscode prompts you to install the recommended extensions, do it.
 1. Find the two functions that have `TODO` comments. Your job is to fill in the missing code such that the tests all pass.
+1. At any time, run the tests by clicking on the Erlenmeyer flask icon on the left, then click the play button at the top.
 1. When you have code working, commit it to Github using vscode. Google how to do that if you aren't sure.
 1. I'll be able to see if your code passes the tests.
 

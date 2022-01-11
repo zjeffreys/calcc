@@ -38,7 +38,7 @@ namespace CalcC
                 // If you get stuck, think about what the
                 // code would look like in C# and use
                 // sharplab.io to see what the CIL would be.
-                
+
                 throw new NotImplementedException();
             }
 

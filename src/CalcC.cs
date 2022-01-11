@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using static CalcC.TokenType;
+using System.Text.RegularExpressions;
 
 namespace CalcC
 {
@@ -20,26 +21,83 @@ namespace CalcC
             foreach (var token in tokens)
             {
                 var tokenType = GetTokenType(token);
+                switch (tokenType)
+                {
+                    case Number:
+                        cil += $@"
+    // Push {token} on the stack
+    ldloc.0
+    ldc.i4.s {token}
+    callvirt instance void class [System.Collections]System.Collections.Generic.Stack`1<int32>::Push(!0)
+";
+                        break;
 
-                // TODO:
-                // Finish the code in this loop to emit
-                // the correct CIL instructions based on the
-                // tokenType and the token's value.
-                //
-                // Hint: this will likely be a big
-                // switch-case statement or a bunch of
-                // if-else-if statements.
-                //
-                // To emit the instructions, all you 
-                // have to do is say
-                //   `cil += "...";
-                // to append the instructions to the output.
-                //
-                // If you get stuck, think about what the
-                // code would look like in C# and use
-                // sharplab.io to see what the CIL would be.
+                    case BinaryOperator:
+                        var instruction = token switch
+                        {
+                            "+" => "add",
+                            "-" => "sub",
+                            "*" => "mul",
+                            "/" => "div",
+                            "%" => "rem",
+                            _ => throw new InvalidOperationException(nameof(token)),
+                        };
+                        cil += $@"
+    // Pop two values off the stack, execute a {instruction} operation, and push the result
+    ldloc.0
+    ldloc.0
+    callvirt instance !0 class [System.Collections]System.Collections.Generic.Stack`1<int32>::Pop()
+    ldloc.0
+    callvirt instance !0 class [System.Collections]System.Collections.Generic.Stack`1<int32>::Pop()
+    {instruction}
+    callvirt instance void class [System.Collections]System.Collections.Generic.Stack`1<int32>::Push(!0)
+";
+                        break;
 
-                throw new NotImplementedException();
+                    case UnaryOperator:
+                        switch (token)
+                        {
+                            case "sqrt":
+                                cil += $@"
+    // Pop one value off the stack, execute a {token} operation, and push the result
+    ldloc.0
+    ldloc.0
+    callvirt instance !0 class [System.Collections] System.Collections.Generic.Stack`1<int32>::Pop()
+    conv.r8
+    call float64[System.Private.CoreLib] System.Math::Sqrt(float64)
+    conv.ovf.i4
+    callvirt instance void class [System.Collections] System.Collections.Generic.Stack`1<int32>::Push(!0)
+";
+                                break;
+                            default:
+                                throw new InvalidOperationException(nameof(token));
+                        }
+                        break;
+
+                    case StoreInstruction:
+                        var register = token[1];
+                        cil += $@"
+    // Pop the stack and store it in register '{register}'
+    ldloc.1
+    ldc.i4.s {(int)register}
+    ldloc.0
+    callvirt instance !0 class [System.Collections]System.Collections.Generic.Stack`1<int32>::Pop()
+    callvirt instance void class [System.Private.CoreLib]System.Collections.Generic.Dictionary`2<char, int32>::set_Item(!0, !1)
+";
+                        break;
+
+                    case RetrieveInstruction:
+                        register = token[1];
+                        cil += $@"
+    // Push the value of register '{register}' onto the stack
+    ldloc.0
+    ldloc.1
+    ldc.i4.s {(int)register}
+    callvirt instance !1 class [System.Private.CoreLib]System.Collections.Generic.Dictionary`2<char, int32>::get_Item(!0)
+    callvirt instance void class [System.Collections]System.Collections.Generic.Stack`1<int32>::Push(!0)
+";
+                        break;
+                }
             }
 
             // Emit the postamble.
@@ -55,7 +113,46 @@ namespace CalcC
         // types are given to you in TokenType.cs.
         private static TokenType GetTokenType(string token)
         {
-            throw new NotImplementedException();
+            if (string.IsNullOrWhiteSpace(token))
+            {
+                return Blank;
+            }
+            else if (Regex.IsMatch(token, "[0-9]"))
+            {
+                return Number;
+            }
+            else if (token[0] == '-')
+            {
+                if (token.Length == 1)
+                {
+                    return BinaryOperator;
+                }
+                else
+                {
+                    return Number;
+                }
+            }
+            //[0-9]
+            else if ("+*/%".IndexOf(token[0]) > -1)
+            {
+                return BinaryOperator;
+            }
+            else if (token == "sqrt")
+            {
+                return UnaryOperator;
+            }
+            else if (token[0] == 's')
+            {
+                return StoreInstruction;
+            }
+            else if (token[0] == 'r')
+            {
+                return RetrieveInstruction;
+            }
+            else
+            {
+                return Unknown;
+            }
         }
 
         // Preamble:
